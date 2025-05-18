@@ -1,31 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+
+import '../models/task_model.dart';
+
 
 class TodoProvider with ChangeNotifier {
-  List<TodoItem> _tasks = [];
+  late Box<Task> _taskBox;
 
-  List<TodoItem> get tasks => _tasks;
-
-  int get completedTaskCount => _tasks.where((task) => task.isCompleted).length;
-
-  void addTask(String title) {
-    _tasks.add(TodoItem(title: title));
-    notifyListeners(); // Notify UI to update
+  TodoProvider() {
+    _init();
   }
 
-  void toggleTask(int index) {
-    _tasks[index].isCompleted = !_tasks[index].isCompleted;
-    notifyListeners(); // Notify UI to update
+  List<Task> get tasks => _taskBox.values.toList();
+
+  int get completedTaskCount =>
+      _taskBox.values.where((task) => task.isCompleted).length;
+
+  Future<void> _init() async {
+    _taskBox = Hive.box<Task>('tasks');
+    notifyListeners();
   }
 
-  void removeTask(int index) {
-    _tasks.removeAt(index);
-    notifyListeners(); // Notify UI to update
+  Future<void> addTask(String title) async {
+    final task = Task(title: title);
+    await _taskBox.add(task);
+    notifyListeners();
   }
-}
 
-class TodoItem {
-  String title;
-  bool isCompleted;
+  Future<void> toggleTask(int index) async {
+    final task = _taskBox.getAt(index);
+    if (task != null) {
+      task.isCompleted = !task.isCompleted;
+      await task.save();
+      notifyListeners();
+    }
+  }
 
-  TodoItem({required this.title, this.isCompleted = false});
+  Future<void> removeTask(int index) async {
+    await _taskBox.deleteAt(index);
+    notifyListeners();
+  }
 }
