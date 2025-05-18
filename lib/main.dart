@@ -1,7 +1,9 @@
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -17,11 +19,15 @@ import 'models/task_model.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
-
-
   await Firebase.initializeApp();
-  final appDocumentDir = await getApplicationDocumentsDirectory();
-  Hive.init(appDocumentDir.path);
+
+  final database = FirebaseDatabase.instanceFor(
+    app: Firebase.app(),
+    databaseURL: 'https://todoapp-63957-default-rtdb.asia-southeast1.firebasedatabase.app',
+  );
+
+  final DatabaseReference _dbRef = database.ref('tasks');
+  await Hive.initFlutter();
   Hive.registerAdapter(TaskAdapter());
   await Hive.openBox<Task>('tasks');
   runApp(
